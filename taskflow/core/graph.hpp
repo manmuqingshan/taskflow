@@ -15,8 +15,8 @@
 #include "../utility/lazy_string.hpp"
 #include "error.hpp"
 #include "declarations.hpp"
-#include "semaphore.hpp"
 #include "environment.hpp"
+#include "semaphore.hpp"
 #include "topology.hpp"
 #include "wsq.hpp"
 
@@ -217,7 +217,7 @@ class TaskParams {
 class DefaultTaskParams {};
 
 /**
-@brief determines if a type is a task parameter type
+@brief concept that determines if a type is a task parameter type
 
 A type satisfies tf::TaskParams if it is one of the following:
   + tf::TaskParams
@@ -231,7 +231,7 @@ concept TaskParamsLike =
   StringLike<P>;
 
 /**
-@brief determines if a type is a task parameter type (variable template)
+@brief concept that determines if a type is a task parameter type (variable template)
 
 @tparam P type to check
 
@@ -915,7 +915,7 @@ class ExplicitAnchorGuard {
 /**
 @private
 */
-using NodePool = std::conditional_t
+using NodePool = std::conditional_t<
   std::atomic<tf::TaggedHead128>::is_always_lock_free,
   ObjectPool<Node, tf::TaggedHead128>,
   ObjectPool<Node, tf::TaggedHead64<>>

@@ -209,17 +209,6 @@ template <typename T>
 constexpr bool is_std_compare_v = is_std_compare<T>::value;
 
 // ----------------------------------------------------------------------------
-// check if all types are the same
-// ----------------------------------------------------------------------------
-
-template <typename T, typename... Ts>
-concept all_same = (std::same_as<T, Ts> && ...);
-
-// backward-compatible variable template
-template <typename T, typename... Ts>
-constexpr bool all_same_v = all_same<T, Ts...>;
-
-// ----------------------------------------------------------------------------
 // Iterator
 // ----------------------------------------------------------------------------
 
