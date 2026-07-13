@@ -998,6 +998,52 @@ class Task {
 
   */
   Task& data(void* data);
+
+  /**
+  @brief assigns a priority level to the task
+
+  @param p the priority level (tf::TaskPriority::HIGH, tf::TaskPriority::NORMAL, or tf::TaskPriority::LOW)
+  @return @c *this
+
+  A task with a higher priority (lower numerical value) will be executed
+  before tasks with lower priority (higher numerical value) when they are
+  both ready to run.
+
+  @note
+  Priority scheduling is only active when the library is built with
+  @c TF_ENABLE_TASK_PRIORITY defined. Otherwise this call is a no-op and
+  all tasks are scheduled at the default (highest) priority.
+
+  @code{.cpp}
+  tf::Taskflow taskflow;
+  auto [A, B, C] = taskflow.emplace(
+    [](){},
+    [](){},
+    [](){}
+  );
+  A.priority(tf::TaskPriority::HIGH);
+  B.priority(tf::TaskPriority::NORMAL);
+  C.priority(tf::TaskPriority::LOW);
+  @endcode
+  */
+  Task& priority(TaskPriority p);
+
+  /**
+  @brief queries the priority level of the task
+
+  @return the priority level of the task
+
+  @note
+  When the library is built without @c TF_ENABLE_TASK_PRIORITY, priorities
+  are not stored and this always returns tf::TaskPriority::HIGH.
+
+  @code{.cpp}
+  tf::Task task = taskflow.emplace([](){});
+  task.priority(tf::TaskPriority::HIGH);
+  assert(task.priority() == tf::TaskPriority::HIGH);
+  @endcode
+  */
+  TaskPriority priority() const;
   
   /**
   @brief resets the task handle to null
@@ -1519,6 +1565,19 @@ inline void* Task::data() const {
 // Function: data
 inline Task& Task::data(void* data) {
   _node->_data = data;
+  return *this;
+}
+
+// Function: priority
+inline TaskPriority Task::priority() const {
+  // priority bits are stored directly as the TaskPriority value
+  // (HIGH=0, NORMAL=1, LOW=2); an unset priority reads back as HIGH
+  return static_cast<TaskPriority>(_node->priority());
+}
+
+// Function: priority
+inline Task& Task::priority(TaskPriority p) {
+  _node->_set_priority(p);
   return *this;
 }
 

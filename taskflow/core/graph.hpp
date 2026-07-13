@@ -133,6 +133,32 @@ class Graph {
 };
 
 // ----------------------------------------------------------------------------
+// TaskPriority
+// ----------------------------------------------------------------------------
+
+/**
+@enum TaskPriority
+
+@brief enumeration of all task priority levels
+
+A priority level determines the order in which a task is picked up by a worker
+when tasks are ready to execute. Tasks with higher priority (lower numerical value)
+are executed before tasks with lower priority (higher numerical value).
+
+@note
+Priority scheduling only takes effect when the library is built with
+@c TF_ENABLE_TASK_PRIORITY defined; otherwise task priorities are ignored.
+*/
+enum class TaskPriority : unsigned {
+  /** @brief the highest task priority level (most urgent) */
+  HIGH = 0,
+  /** @brief the normal task priority level */
+  NORMAL = 1,
+  /** @brief the lowest task priority level (least urgent) */
+  LOW = 2,
+};
+
+// ----------------------------------------------------------------------------
 // TaskParams
 // ----------------------------------------------------------------------------
 
@@ -238,23 +264,40 @@ class NodeBase {
   friend class TaskGroup;
   friend class Algorithm;
   
+  public:
+
+  size_t priority() const {
+#ifdef TF_ENABLE_TASK_PRIORITY
+    return static_cast<size_t>((_nstate & NSTATE::PRIORITY_MASK) >> NSTATE::PRIORITY_SHIFT);
+#else
+    return 0;
+#endif
+  }
+
   protected:
-  
+
   nstate_t _nstate              {NSTATE::NONE};
   std::atomic<estate_t> _estate {ESTATE::NONE};
 
   NodeBase* _parent {nullptr};
   std::atomic<size_t> _join_counter {0};
-  
+
   std::exception_ptr _exception_ptr {nullptr};
 
   NodeBase() = default;
 
   NodeBase(nstate_t nstate, estate_t estate, NodeBase* parent, size_t join_counter) :
-    _nstate {nstate}, 
+    _nstate {nstate},
     _estate {estate},
     _parent {parent},
     _join_counter {join_counter} {
+  }
+
+  void _set_priority([[maybe_unused]] TaskPriority p) {
+#ifdef TF_ENABLE_TASK_PRIORITY
+    nstate_t encoded = (static_cast<nstate_t>(p)) << NSTATE::PRIORITY_SHIFT;
+    _nstate = (_nstate & ~NSTATE::PRIORITY_MASK) | encoded;
+#endif
   }
   
   void _rethrow_exception() {
@@ -300,7 +343,7 @@ class Topology : public NodeBase {
 
   std::function<bool()> _predicate;
   std::function<void()> _on_finish;
-  
+
   void _carry_out_promise();
 };
 
@@ -513,7 +556,7 @@ class Node : public NodeBase {
   std::string _name;
   
   void* _data {nullptr};
-  
+
   Topology* _topology {nullptr};
 
   size_t _num_successors {0};
