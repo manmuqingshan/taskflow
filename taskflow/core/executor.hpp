@@ -1686,6 +1686,7 @@ inline void Executor::_bulk_schedule(I first, size_t num_nodes) {
 
 // Function: _update_cache
 TF_FORCE_INLINE void Executor::_update_cache(Worker& worker, Node*& cache, Node* node) {
+#ifdef TF_ENABLE_TASK_PRIORITY
   if(cache) {
     if(node->priority() < cache->priority()) {
       std::swap(cache, node);
@@ -1694,6 +1695,12 @@ TF_FORCE_INLINE void Executor::_update_cache(Worker& worker, Node*& cache, Node*
   } else {
     cache = node;
   }
+#else
+  if(cache) {
+    _schedule(worker, cache);
+  }
+  cache = node;
+#endif
 }
 
 // Function: _bulk_update_cache
@@ -2442,7 +2449,11 @@ inline size_t Executor::_set_up_graph(Graph& graph, Topology* tpg, NodeBase* par
     auto node = *first;
     node->_topology = tpg;
     node->_parent = parent;
+#ifdef TF_ENABLE_TASK_PRIORITY
     node->_nstate &= NSTATE::CLEAR_MASK;
+#else
+    node->_nstate &= NSTATE::NONE;
+#endif
     node->_estate.store(ESTATE::NONE, std::memory_order_relaxed);
     node->_set_up_join_counter();
     node->_exception_ptr = nullptr;

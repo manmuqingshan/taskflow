@@ -1009,6 +1009,11 @@ class Task {
   before tasks with lower priority (higher numerical value) when they are
   both ready to run.
 
+  @note
+  Priority scheduling is only active when the library is built with
+  @c TF_ENABLE_TASK_PRIORITY defined. Otherwise this call is a no-op and
+  all tasks are scheduled at the default (highest) priority.
+
   @code{.cpp}
   tf::Taskflow taskflow;
   auto [A, B, C] = taskflow.emplace(
@@ -1027,6 +1032,10 @@ class Task {
   @brief queries the priority level of the task
 
   @return the priority level of the task
+
+  @note
+  When the library is built without @c TF_ENABLE_TASK_PRIORITY, priorities
+  are not stored and this always returns tf::TaskPriority::HIGH.
 
   @code{.cpp}
   tf::Task task = taskflow.emplace([](){});
@@ -1561,12 +1570,9 @@ inline Task& Task::data(void* data) {
 
 // Function: priority
 inline TaskPriority Task::priority() const {
-  auto bits = _node->priority();
-  // 0=UNSET→HIGH, 1=HIGH, 2=NORMAL, 3=LOW
-  constexpr TaskPriority map[] = {
-    TaskPriority::HIGH, TaskPriority::HIGH, TaskPriority::NORMAL, TaskPriority::LOW
-  };
-  return map[bits];
+  // priority bits are stored directly as the TaskPriority value
+  // (HIGH=0, NORMAL=1, LOW=2); an unset priority reads back as HIGH
+  return static_cast<TaskPriority>(_node->priority());
 }
 
 // Function: priority

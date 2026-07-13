@@ -144,6 +144,10 @@ class Graph {
 A priority level determines the order in which a task is picked up by a worker
 when tasks are ready to execute. Tasks with higher priority (lower numerical value)
 are executed before tasks with lower priority (higher numerical value).
+
+@note
+Priority scheduling only takes effect when the library is built with
+@c TF_ENABLE_TASK_PRIORITY defined; otherwise task priorities are ignored.
 */
 enum class TaskPriority : unsigned {
   /** @brief the highest task priority level (most urgent) */
@@ -153,8 +157,6 @@ enum class TaskPriority : unsigned {
   /** @brief the lowest task priority level (least urgent) */
   LOW = 2,
 };
-
-/** @brief total number of task priority levels */
 
 // ----------------------------------------------------------------------------
 // TaskParams
@@ -265,7 +267,11 @@ class NodeBase {
   public:
 
   size_t priority() const {
+#ifdef TF_ENABLE_TASK_PRIORITY
     return static_cast<size_t>((_nstate & NSTATE::PRIORITY_MASK) >> NSTATE::PRIORITY_SHIFT);
+#else
+    return 0;
+#endif
   }
 
   protected:
@@ -287,9 +293,11 @@ class NodeBase {
     _join_counter {join_counter} {
   }
 
-  void _set_priority(TaskPriority p) {
+  void _set_priority([[maybe_unused]] TaskPriority p) {
+#ifdef TF_ENABLE_TASK_PRIORITY
     nstate_t encoded = (static_cast<nstate_t>(p)) << NSTATE::PRIORITY_SHIFT;
     _nstate = (_nstate & ~NSTATE::PRIORITY_MASK) | encoded;
+#endif
   }
   
   void _rethrow_exception() {

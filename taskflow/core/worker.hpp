@@ -58,7 +58,11 @@ class Worker {
   friend class Runtime;
   friend class WorkerView;
   
+#ifdef TF_ENABLE_TASK_PRIORITY
   using wsq_type = BoundedPriorityWSQ<BoundedWSQ<Node*>, 3>;
+#else
+  using wsq_type = BoundedWSQ<Node*>;
+#endif
 
   public:
 
